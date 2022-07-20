@@ -1,1 +1,1 @@
-# hamhochoi-discord-bot
+# HamHocHoi Discord BOT
