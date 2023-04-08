@@ -1,0 +1,20 @@
+{
+  "name": "hamhochoi_discord_bot",
+  "version": "1.0.0",
+  "description": "A Discord bot for HamHocHoi server!",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node registerCommands.js && node main.js",
+    "dev": "node registerCommands.js && nodemon main.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.9.0",
+    "dotenv": "^16.0.3"
+  },
+  "devDependencies": {
+    "eslint": "^8.38.0",
+    "nodemon": "^2.0.22"
+  }
+}
