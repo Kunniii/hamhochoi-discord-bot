@@ -1,5 +1,5 @@
 import { commands as generalsCommands } from "./commands/generals.js";
-import { TOKEN } from "./utils/env.js";
+import { TOKEN, LISTEN_TO } from "./utils/env.js";
 import { Client, Events, GatewayIntentBits, ActivityType } from "discord.js";
 import { getCategory } from "./utils/index.js";
 
@@ -26,7 +26,7 @@ client.once(Events.ClientReady, (c) => {
   client.user.setPresence({
     activities: [
       {
-        name: "Sound of life",
+        name: LISTEN_TO,
         type: ActivityType.Listening,
       },
     ],
