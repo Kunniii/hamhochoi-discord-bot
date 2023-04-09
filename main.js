@@ -1,59 +1,107 @@
-import { commands as generalsCommands } from "./commands/generals.js";
-import { TOKEN, LISTEN_TO, APPLICATION_ID } from "./utils/env.js";
-import { Client, Events, GatewayIntentBits, ActivityType, REST, Routes } from "discord.js";
-import { getCategory } from "./utils/index.js";
+// const { clientId, guildId, token, publicKey } = require('./config.json');
 
-//#region BEGIN REGISTER COMMAND
-import { commands } from "./commands/generals.js";
-const rest = new REST({ version: 10 }).setToken(TOKEN);
+import { APPLICATION_ID, GUILD_ID, PUBLIC_KEY, TOKEN, HOST, PORT } from "./utils/env.js";
+import axios from "axios";
+import express from "express";
+import {
+  InteractionType,
+  InteractionResponseType,
+  verifyKeyMiddleware,
+} from "discord-interactions";
 
-const slashCommands = [];
+const app = express();
+// app.use(bodyParser.json());
 
-for (const name in commands) {
-  const command = commands[name];
-  slashCommands.push(command.data.toJSON());
-}
+const discord_api = axios.create({
+  baseURL: "https://discord.com/api/",
+  timeout: 3000,
+  headers: {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE",
+    "Access-Control-Allow-Headers": "Authorization",
+    Authorization: `Bot ${TOKEN}`,
+  },
+});
 
-(async () => {
+app.post("/interactions", verifyKeyMiddleware(PUBLIC_KEY), async (req, res) => {
+  const interaction = req.body;
+
+  if (interaction.type === InteractionType.APPLICATION_COMMAND) {
+    console.log(interaction.data.name);
+    if (interaction.data.name == "yo") {
+      return res.send({
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: `Yo ${interaction.member.user.username}!`,
+        },
+      });
+    }
+
+    if (interaction.data.name == "dm") {
+      // https://discord.com/developers/docs/resources/user#create-dm
+      const c = (
+        await discord_api.post("/users/@me/channels", {
+          recipient_id: interaction.member.user.id,
+        })
+      ).data;
+      try {
+        // https://discord.com/developers/docs/resources/channel#create-message
+        const result = await discord_api.post(`/channels/${c.id}/messages`, {
+          content:
+            "Yo! I got your slash command. I am not able to respond to DMs just slash commands.",
+        });
+        console.log(result.data);
+      } catch (e) {
+        console.log(e);
+      }
+
+      return res.send({
+        // https://discord.com/developers/docs/interactions/receiving-and-responding#responding-to-an-interaction
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: "👍",
+        },
+      });
+    }
+  }
+});
+
+app.get("/register_commands", async (req, res) => {
+  const slash_commands = [
+    {
+      name: "yo",
+      description: "replies with Yo!",
+      options: [],
+    },
+    {
+      name: "dm",
+      description: "sends user a DM",
+      options: [],
+    },
+  ];
   try {
-    console.log(`Registering ${slashCommands.length} commands!`);
-    const data = await rest.put(Routes.applicationCommands(APPLICATION_ID), {
-      body: slashCommands,
-    });
-    console.log(`Successfully reloaded ${data.length} application (/) commands.`);
-  } catch (err) {
-    console.log(err.message);
+    // api docs - https://discord.com/developers/docs/interactions/application-commands#create-global-application-command
+    const discord_response = await discord_api.put(
+      `/applications/${APPLICATION_ID}/guilds/${GUILD_ID}/commands`,
+      slash_commands
+    );
+    console.log(discord_response.data);
+    return res.send("commands have been registered");
+  } catch (e) {
+    console.error(e.code);
+    console.error(e.response?.data);
+    return res.send(`${e.code} error from discord`);
   }
-})();
-//#endregion END REGISTER COMMAND
+});
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+app.get("/", async (req, res) => {
+  return res.send("Follow documentation ");
+});
 
-const handleInteraction = async (interaction) => {
-  const { username: userAccount, discriminator: userId } = interaction.user;
-  const { commandName } = interaction;
-  console.log(`[${userAccount}#${userId}] [${commandName}] [${Date.now()}]`);
-  const category = getCategory(interaction);
-  switch (category) {
-    case "generals":
-      await generalsCommands[commandName].execute(interaction);
-      break;
-    default:
-      await interaction.reply({ content: "Unknown Command!", ephemeral: true });
+app.listen(PORT, (e) => {
+  if (e) {
+    console.log(e.message);
+  } else {
+    console.log(`Go to ${HOST}:${PORT}/register_commands`);
   }
-};
-client.on(Events.InteractionCreate, handleInteraction);
-
-client.login(TOKEN);
-client.once(Events.ClientReady, (c) => {
-  console.log(`${c.user.tag}\n=================\n`);
-  client.user.setPresence({
-    activities: [
-      {
-        name: LISTEN_TO,
-        type: ActivityType.Listening,
-      },
-    ],
-    status: "online",
-  });
 });
