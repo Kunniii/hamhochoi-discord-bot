@@ -13,7 +13,7 @@ const app = express();
 // app.use(bodyParser.json());
 
 const discord_api = axios.create({
-  baseURL: "https://discord.com/api/",
+  baseURL: "https://discord.com/api/v10",
   timeout: 3000,
   headers: {
     "Access-Control-Allow-Origin": "*",
@@ -32,7 +32,7 @@ app.post("/interactions", verifyKeyMiddleware(PUBLIC_KEY), async (req, res) => {
       return res.send({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
-          content: `Yo ${interaction.member.user.username}!`,
+          content: `Yo @${interaction.member.user.username}!`,
         },
       });
     }
