@@ -37,6 +37,16 @@ app.post("/interactions", verifyKeyMiddleware(PUBLIC_KEY), async (req, res) => {
       });
     }
 
+    if (interaction.data.name == "ping") {
+      const sent = await res.send({
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: `PING @${interaction.member.nick}!`,
+        },
+      });
+      console.log(sent);
+    }
+
     if (interaction.data.name == "dm") {
       // https://discord.com/developers/docs/resources/user#create-dm
       const c = (
@@ -76,6 +86,11 @@ app.get("/register_commands", async (req, res) => {
     {
       name: "dm",
       description: "sends user a DM",
+      options: [],
+    },
+    {
+      name: "ping",
+      description: "replies the ping between your Discord server to BOT",
       options: [],
     },
   ];
